@@ -41,53 +41,55 @@ int main(int argc, char *argv[]) {
 	char prompt[] = "password: ";
 	char *user_pass;
 
+	//ignoring interupts (ctrl-c)
 	signal(SIGINT, sighandler);
 	signal(SIGQUIT, sighandler);
 	signal(SIGTERM, sighandler);
 
 	while (TRUE) {
 		/* check what important variable contains - do not remove, part of buffer overflow test */
-		// printf("Value of variable 'important1' before input of login name: %s\n",
-		// 		important1);
-		// printf("Value of variable 'important2' before input of login name: %s\n",
-		// 		important2);
+		printf("Value of variable 'important1' before input of login name: %s\n",
+				important1);
+		printf("Value of variable 'important2' before input of login name: %s\n",
+				important2);
 
 		printf("login: ");
 		fflush(NULL); /* Flush all  output buffers */
 		__fpurge(stdin); /* Purge any data in stdin buffer */
 
-		if (fgets(user, LENGTH, stdin) == NULL) /* gets() is vulnerable to buffer */
-			exit(0); /*  overflow attacks.  */
+		//limited input to LENGTH size input
+		if (fgets(user, LENGTH, stdin) == NULL) 
+			exit(0); 
 		
-		for (int i = 0; i < LENGTH; i++)
-		{
+		// remove '\n' from fgets
+		for (int i = 0; i < LENGTH; i++){
 			if(user[i] == '\n')
 				user[i] = '\0';
 		}
 		
 
 		/* check to see if important variable is intact after input of login name - do not remove */
-		// printf("Value of variable 'important 1' after input of login name: %*.*s\n",
-		// 		LENGTH - 1, LENGTH - 1, important1);
-		// printf("Value of variable 'important 2' after input of login name: %*.*s\n",
-		//  		LENGTH - 1, LENGTH - 1, important2);
+		printf("Value of variable 'important 1' after input of login name: %*.*s\n",
+				LENGTH - 1, LENGTH - 1, important1);
+		printf("Value of variable 'important 2' after input of login name: %*.*s\n",
+		 		LENGTH - 1, LENGTH - 1, important2);
 
 		user_pass = getpass(prompt);
-		printf("\n");
 		passwddata = mygetpwnam(user);
 
 		if (passwddata != NULL) {
 			/* You have to encrypt user_pass for this to work */
 			/* Don't forget to include the salt */
 
+			// encrypting what the user typed to then check against the cypher texts stored in the db
 			if (strcmp(crypt(user_pass, passwddata->passwd_salt), passwddata->passwd) == 0) {
-
+				
 				passwddata->pwage += 1;
 				passwddata->pwfailed = 0;
 
 				printf(" You're in!\n Faild attempts: %d and account age: %d\n", passwddata->pwfailed, passwddata->pwage);
-				if(passwddata->pwage > 10){
-					printf("Please chagne your password!\n Provide a new Password!\n");
+				if(passwddata->pwage > 10){ //if the age is above 10 then request a new pw and update age
+					printf("Please chagne your password!\nProvide a new Password!\n");
 					user_pass = getpass(prompt);
 					passwddata->passwd = crypt(user_pass, passwddata->passwd_salt);
 					passwddata->pwage = 0;
@@ -104,6 +106,7 @@ int main(int argc, char *argv[]) {
 				passwddata->pwfailed += 1;
 				mysetpwent(user, passwddata);
 
+				// if failed more then 5 sleet to stop bruteforce
 				if(passwddata->pwfailed > 5){
 					printf("STOP!\n");
 					fflush(stdout);
