@@ -12,7 +12,7 @@
 #include <sys/types.h>
 #include <crypt.h>
 /* Uncomment next line in step 2 */
-/* #include "pwent.h" */
+#include "pwent.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -24,9 +24,11 @@ void sighandler() {
 	/* see 'man 2 signal' */
 }
 
+
+
 int main(int argc, char *argv[]) {
 
-	struct passwd *passwddata; /* this has to be redefined in step 2 */
+	mypwent *passwddata; /* this has to be redefined in step 2 */
 	/* see pwent.h */
 
 	char important1[LENGTH] = "**IMPORTANT 1**";
@@ -39,41 +41,74 @@ int main(int argc, char *argv[]) {
 	char prompt[] = "password: ";
 	char *user_pass;
 
-	sighandler();
+	signal(SIGINT, sighandler);
+	signal(SIGQUIT, sighandler);
+	signal(SIGTERM, sighandler);
 
 	while (TRUE) {
 		/* check what important variable contains - do not remove, part of buffer overflow test */
-		printf("Value of variable 'important1' before input of login name: %s\n",
-				important1);
-		printf("Value of variable 'important2' before input of login name: %s\n",
-				important2);
+		// printf("Value of variable 'important1' before input of login name: %s\n",
+		// 		important1);
+		// printf("Value of variable 'important2' before input of login name: %s\n",
+		// 		important2);
 
 		printf("login: ");
 		fflush(NULL); /* Flush all  output buffers */
 		__fpurge(stdin); /* Purge any data in stdin buffer */
 
-		if (gets(user) == NULL) /* gets() is vulnerable to buffer */
+		if (fgets(user, LENGTH, stdin) == NULL) /* gets() is vulnerable to buffer */
 			exit(0); /*  overflow attacks.  */
+		
+		for (int i = 0; i < LENGTH; i++)
+		{
+			if(user[i] == '\n')
+				user[i] = '\0';
+		}
+		
 
 		/* check to see if important variable is intact after input of login name - do not remove */
-		printf("Value of variable 'important 1' after input of login name: %*.*s\n",
-				LENGTH - 1, LENGTH - 1, important1);
-		printf("Value of variable 'important 2' after input of login name: %*.*s\n",
-		 		LENGTH - 1, LENGTH - 1, important2);
+		// printf("Value of variable 'important 1' after input of login name: %*.*s\n",
+		// 		LENGTH - 1, LENGTH - 1, important1);
+		// printf("Value of variable 'important 2' after input of login name: %*.*s\n",
+		//  		LENGTH - 1, LENGTH - 1, important2);
 
 		user_pass = getpass(prompt);
-		passwddata = getpwnam(user);
+		printf("\n");
+		passwddata = mygetpwnam(user);
 
 		if (passwddata != NULL) {
 			/* You have to encrypt user_pass for this to work */
 			/* Don't forget to include the salt */
 
-			if (!strcmp(user_pass, passwddata->pw_passwd)) {
+			if (strcmp(crypt(user_pass, passwddata->passwd_salt), passwddata->passwd) == 0) {
 
-				printf(" You're in !\n");
+				passwddata->pwage += 1;
+				passwddata->pwfailed = 0;
+
+				printf(" You're in!\n Faild attempts: %d and account age: %d\n", passwddata->pwfailed, passwddata->pwage);
+				if(passwddata->pwage > 10){
+					printf("Please chagne your password!\n Provide a new Password!\n");
+					user_pass = getpass(prompt);
+					passwddata->passwd = crypt(user_pass, passwddata->passwd_salt);
+					passwddata->pwage = 0;
+				}
+
+				mysetpwent(user, passwddata);
 
 				/*  check UID, see setuid(2) */
+				setuid(passwddata->uid);
 				/*  start a shell, use execve(2) */
+				execve("/bin/bash", NULL, NULL);
+
+			}else{
+				passwddata->pwfailed += 1;
+				mysetpwent(user, passwddata);
+
+				if(passwddata->pwfailed > 5){
+					printf("STOP!\n");
+					fflush(stdout);
+					sleep(5);
+				}
 
 			}
 		}

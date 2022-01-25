@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include  <unistd.h>
+#include <unistd.h>
 
 int is_salt(char *salt) {
 	char salts[] =
