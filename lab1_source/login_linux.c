@@ -45,6 +45,8 @@ int main(int argc, char *argv[]) {
 	signal(SIGINT, sighandler);
 	signal(SIGQUIT, sighandler);
 	signal(SIGTERM, sighandler);
+	signal(SIGTSTP, sighandler);
+	signal(SIGABRT, sighandler);
 
 	while (TRUE) {
 		/* check what important variable contains - do not remove, part of buffer overflow test */
