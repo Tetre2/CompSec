@@ -99,10 +99,9 @@ int main(int argc, char *argv[]) {
 
 				mysetpwent(user, passwddata);
 
-				/*  check UID, see setuid(2) */
-				setuid(passwddata->uid);
-				/*  start a shell, use execve(2) */
-				execve("/bin/bash", NULL, NULL);
+				if(setuid(passwddata->uid) == 0){
+					execve("/bin/bash", NULL, NULL);
+				}
 
 			}else{
 				passwddata->pwfailed += 1;
