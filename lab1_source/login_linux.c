@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
 			/* You have to encrypt user_pass for this to work */
 			/* Don't forget to include the salt */
 
-			// encrypting what the user typed to then check against the cypher texts stored in the db
+			// hasing what the user typed to then check against the hash stored in the db
 			if (strcmp(crypt(user_pass, passwddata->passwd_salt), passwddata->passwd) == 0) {
 				
 				passwddata->pwage += 1;
@@ -97,23 +97,22 @@ int main(int argc, char *argv[]) {
 					passwddata->pwage = 0;
 				}
 
-				mysetpwent(user, passwddata);
-
-				if(setuid(passwddata->uid) == 0){
-					execve("/bin/bash", NULL, NULL);
+				if(mysetpwent(user, passwddata) == 0){
+					if(setuid(passwddata->uid) == 0){
+						execve("/bin/bash", NULL, NULL);
+					}
 				}
 
 			}else{
 				passwddata->pwfailed += 1;
 				mysetpwent(user, passwddata);
 
-				// if failed more then 5 sleet to stop bruteforce
+				// if failed more then 5 sleep to stop bruteforce
 				if(passwddata->pwfailed > 5){
 					printf("STOP!\n");
 					fflush(stdout);
 					sleep(5);
 				}
-
 			}
 		}
 		printf("Login Incorrect \n");
